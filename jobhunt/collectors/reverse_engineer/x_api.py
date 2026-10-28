@@ -41,6 +41,10 @@ class XSearchClient:
         self.ct0 = ct0 or os.getenv("X_CT0", "")
         self.timeout = timeout
 
+    def has_auth(self) -> bool:
+        """Returns True if required authentication tokens are present."""
+        return bool(self.auth_token and self.ct0)
+
     def search_hiring(
         self,
         query: str = '(hiring OR "we are hiring") (sde OR "full stack" OR backend) bangalore',
