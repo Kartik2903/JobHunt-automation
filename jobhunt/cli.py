@@ -106,6 +106,27 @@ def cmd_run(args) -> int:
             print("companies.yaml has no entries")
             return 1
         jobs = fetch_all(companies)
+
+        # Reverse-engineered LinkedIn & X collectors
+        try:
+            from jobhunt.collectors.reverse_engineer.linkedin_voyager import LinkedInVoyagerClient
+            from jobhunt.collectors.reverse_engineer.x_api import XSearchClient
+            locs = filters.get("locations", ["bangalore", "india"])
+            primary_loc = locs[0] if locs else "bangalore"
+            li_client = LinkedInVoyagerClient()
+            li_jobs = li_client.search_jobs(keywords="Software Engineer", location=primary_loc, limit=25, days=4)
+            if li_jobs:
+                print(f"  {'LinkedIn Voyager':<28} {len(li_jobs):>4} jobs  (linkedin)")
+                jobs.extend(li_jobs)
+
+            x_client = XSearchClient()
+            if x_client.has_auth():
+                x_jobs = x_client.search_hiring(query=f'(hiring OR "we are hiring") (Software Engineer OR "Full Stack" OR Backend) {primary_loc}', count=25, days=4)
+                if x_jobs:
+                    print(f"  {'X / Twitter Search':<28} {len(x_jobs):>4} posts (x)")
+                    jobs.extend(x_jobs)
+        except Exception as e:
+            print(f"  ! reverse collectors note: {e}")
     scanned = len(jobs)
     if not scanned:
         print("no postings fetched — check the slugs in companies.yaml")

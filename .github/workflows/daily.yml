@@ -2,10 +2,8 @@ name: daily job digest
 
 on:
   schedule:
-    # 06:00 IST every day. IST is UTC+5:30, so 06:00 IST == 00:30 UTC.
-    # GitHub's scheduler is best-effort and can lag by several minutes under
-    # load — that is fine for a job digest, do not tighten it.
-    - cron: "30 0 * * *"
+    # 09:00 AM IST every day. IST is UTC+5:30, so 09:00 IST == 03:30 UTC.
+    - cron: "30 3 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -81,6 +79,8 @@ jobs:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
           SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
+          X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
+          X_CT0: ${{ secrets.X_CT0 }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
