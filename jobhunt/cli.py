@@ -111,6 +111,7 @@ def cmd_run(args) -> int:
         try:
             from jobhunt.collectors.reverse_engineer.linkedin_voyager import LinkedInVoyagerClient
             from jobhunt.collectors.reverse_engineer.x_api import XSearchClient
+            from jobhunt.collectors.reverse_engineer.linkedin_hidden_market import HiddenJobMarketScanner
             locs = filters.get("locations", ["bangalore", "india"])
             primary_loc = locs[0] if locs else "bangalore"
             li_client = LinkedInVoyagerClient()
@@ -118,6 +119,22 @@ def cmd_run(args) -> int:
             if li_jobs:
                 print(f"  {'LinkedIn Voyager':<28} {len(li_jobs):>4} jobs  (linkedin)")
                 jobs.extend(li_jobs)
+
+            # Hidden Job Market: OSINT scan for hiring-manager posts on LinkedIn
+            try:
+                target_roles = profile.get("target_titles", []) if profile else []
+                scanner = HiddenJobMarketScanner(
+                    roles=target_roles or None,
+                    industries=None,  # uses defaults: SaaS, Fintech, AI
+                    locations=[loc.title() for loc in locs[:3]] or None,
+                    days_window=30,
+                )
+                hidden_jobs = scanner.scan(max_results_per_query=10)
+                if hidden_jobs:
+                    print(f"  {'LinkedIn Hidden Market':<28} {len(hidden_jobs):>4} posts (linkedin-hidden)")
+                    jobs.extend(hidden_jobs)
+            except Exception as e:
+                print(f"  ! hidden market scan note: {e}")
 
             x_client = XSearchClient()
             if x_client.has_auth():
@@ -238,6 +255,28 @@ def cmd_stats(args) -> int:
     return 0
 
 
+def cmd_hidden_market(args) -> int:
+    from jobhunt.collectors.reverse_engineer.linkedin_hidden_market import HiddenJobMarketScanner
+    roles = [r.strip() for r in args.role.split(",")] if args.role else None
+    industries = [i.strip() for i in args.industry.split(",")] if args.industry else None
+    locations = [l.strip() for l in args.location.split(",")] if args.location else None
+
+    scanner = HiddenJobMarketScanner(
+        roles=roles,
+        industries=industries,
+        locations=locations,
+        days_window=args.days,
+    )
+    print(f"\nScanning LinkedIn Hidden Job Market (past {args.days} days)...")
+    results = scanner.scan_raw(max_results_per_query=args.limit)
+    table = scanner.format_markdown_table(results)
+    print("\n" + table + "\n")
+    if args.out:
+        Path(args.out).write_text(table, encoding="utf-8")
+        print(f"Saved table to {args.out}")
+    return 0
+
+
 def main(argv=None) -> int:
     _load_env()
     p = argparse.ArgumentParser(
@@ -267,6 +306,15 @@ def main(argv=None) -> int:
 
     ss = sub.add_parser("stats", help="tracker summary + CSV export")
     ss.set_defaults(func=cmd_stats)
+
+    sh = sub.add_parser("hidden-market", help="OSINT search for hidden hiring manager posts on LinkedIn")
+    sh.add_argument("--role", help="Target role(s), comma-separated")
+    sh.add_argument("--industry", help="Target industry/industries, comma-separated")
+    sh.add_argument("--location", help="Target location(s), comma-separated")
+    sh.add_argument("--days", type=int, default=30, help="Days window (default: 30)")
+    sh.add_argument("--limit", type=int, default=10, help="Max results per search query")
+    sh.add_argument("--out", help="Save markdown table to file")
+    sh.set_defaults(func=cmd_hidden_market)
 
     args = p.parse_args(argv)
     return args.func(args)

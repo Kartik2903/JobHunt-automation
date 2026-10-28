@@ -328,6 +328,33 @@ def get_linkedin_jobs(
         return []
 
 
+@app.get("/jobs/linkedin-hidden", response_model=list[JobResponse], tags=["Jobs"])
+def get_linkedin_hidden_jobs(
+    role: str | None = Query(None, description="Comma-separated target roles e.g. Full-Stack Engineer, Backend Engineer"),
+    industry: str | None = Query(None, description="Comma-separated target industries e.g. SaaS, Fintech, AI"),
+    location: str | None = Query(None, description="Comma-separated target locations e.g. Bangalore, India, Remote"),
+    days: int = Query(30, ge=1, le=60, description="Date filter window in days (default 30)"),
+    limit: int = Query(10, ge=1, le=25, description="Max results per search query"),
+) -> list[dict[str, Any]]:
+    """Scan the Hidden Job Market for hiring manager posts on LinkedIn via OSINT search."""
+    try:
+        from jobhunt.collectors.reverse_engineer.linkedin_hidden_market import HiddenJobMarketScanner
+        roles_val = [r.strip() for r in role.split(",") if r.strip()] if role and "{" not in role else None
+        ind_val = [i.strip() for i in industry.split(",") if i.strip()] if industry and "{" not in industry else None
+        loc_val = [l.strip() for l in location.split(",") if l.strip()] if location and "{" not in location else None
+        scanner = HiddenJobMarketScanner(
+            roles=roles_val,
+            industries=ind_val,
+            locations=loc_val,
+            days_window=days,
+        )
+        jobs = scanner.scan(max_results_per_query=limit)
+        return [j.to_dict() for j in jobs]
+    except Exception as e:
+        print(f"Error in get_linkedin_hidden_jobs: {e}")
+        return []
+
+
 @app.get("/jobs/x", response_model=list[JobResponse], tags=["Jobs"])
 def get_x_jobs(
     query: str | None = Query(None, description="Custom X hiring query. If omitted, built from keywords and location"),

@@ -48,6 +48,25 @@ class LinkedInVoyagerClient:
                 pass
         return self._search_guest(keywords, location, limit, days=days)
 
+    def search_hidden_market(
+        self,
+        roles: list[str] | None = None,
+        industries: list[str] | None = None,
+        locations: list[str] | None = None,
+        days_window: int = 30,
+        max_results_per_query: int = 10,
+    ) -> list[Job]:
+        """OSINT hidden job market scanner targeting hiring manager posts on LinkedIn."""
+        from .linkedin_hidden_market import HiddenJobMarketScanner
+        scanner = HiddenJobMarketScanner(
+            roles=roles,
+            industries=industries,
+            locations=locations,
+            days_window=days_window,
+            timeout=self.timeout,
+        )
+        return scanner.scan(max_results_per_query=max_results_per_query)
+
     def _search_voyager(self, keywords: str, location: str, limit: int, days: int = 4) -> list[Job]:
         """Calls internal Voyager search endpoint."""
         url = f"{self.VOYAGER_BASE}/voyagerJobsDashJobCards"

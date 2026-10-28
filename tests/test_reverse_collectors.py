@@ -236,3 +236,99 @@ def test_bridge_server_endpoints():
     data = apply_res.json()
     assert data["success"] is True
     assert data["dry_run"] is True
+
+
+# ----------------------------------------------- LinkedIn Hidden Market tests
+def test_hidden_market_scanner_queries():
+    from jobhunt.collectors.reverse_engineer.linkedin_hidden_market import HiddenJobMarketScanner
+    scanner = HiddenJobMarketScanner(
+        roles=["Product Manager"],
+        industries=["Fintech"],
+        locations=["San Francisco"],
+        days_window=30,
+    )
+    queries = scanner.build_queries()
+    # 1 role x 1 industry = 1 Pattern A
+    # 1 role x 1 location = 1 Pattern B
+    # 1 role = 1 Pattern C
+    assert len(queries) == 3
+    patterns = {q["pattern"] for q in queries}
+    assert patterns == {"A-DirectIntent", "B-CallToAction", "C-TeamGrowth"}
+
+    for q in queries:
+        query_str = q["query"]
+        assert "site:linkedin.com/posts" in query_str
+        assert "after:" in query_str
+        if q["pattern"] == "A-DirectIntent":
+            assert '"Product Manager"' in query_str
+            assert '"I\'m hiring" OR "hiring a" OR "looking for a"' in query_str
+            assert "Fintech" in query_str
+            assert "-intitle:jobs" in query_str
+        elif q["pattern"] == "B-CallToAction":
+            assert '"Product Manager"' in query_str
+            assert '"DM me" OR "send me your resume" OR "email me"' in query_str
+            assert '"hiring"' in query_str
+            assert "San Francisco" in query_str
+            assert "-intitle:jobs" in query_str
+        elif q["pattern"] == "C-TeamGrowth":
+            assert '"excited to announce"' in query_str
+            assert '"growing the team"' in query_str
+            assert '"Product Manager"' in query_str
+            assert "-job -recruiter" in query_str
+
+
+def test_hidden_market_to_jobs_and_table():
+    from jobhunt.collectors.reverse_engineer.linkedin_hidden_market import HiddenJobMarketScanner
+    sample_results = [
+        {
+            "url": "https://www.linkedin.com/posts/sarah-connor_im-hiring-fullstack-activity-7123456789-abcd",
+            "title": "Sarah Connor on LinkedIn: I'm hiring a Full-Stack Engineer...",
+            "snippet": "We are looking for a Full-Stack Engineer to join our growing AI team in Bangalore. DM me or email resume.",
+            "pattern": "A-DirectIntent",
+        }
+    ]
+    jobs = HiddenJobMarketScanner._to_jobs(sample_results)
+    assert len(jobs) == 1
+    job = jobs[0]
+    assert job.ats == "linkedin-hidden"
+    assert "Sarah Connor" in job.company
+    assert "Full-Stack Engineer" in job.title
+    assert "linkedin.com/posts/sarah-connor" in job.url
+    assert "Bangalore" in job.description
+
+    # Test Markdown table generation
+    table = HiddenJobMarketScanner.format_markdown_table(sample_results)
+    assert "| Hiring Manager / Company | Role & Context | **Direct Link to Post** |" in table
+    assert "| :--- | :--- | :--- |" in table
+    assert "| Sarah Connor |" in table
+    assert "[Click Here](https://www.linkedin.com/posts/sarah-connor" in table
+
+    # Also test table from Job object
+    table_jobs = HiddenJobMarketScanner.format_markdown_table(jobs)
+    assert "| Sarah Connor |" in table_jobs
+    assert "[Click Here](" in table_jobs
+
+
+def test_bridge_server_linkedin_hidden_endpoint(monkeypatch):
+    from jobhunt.collectors.reverse_engineer.linkedin_hidden_market import HiddenJobMarketScanner
+    from jobhunt.fetch import Job
+
+    dummy_job = Job(
+        job_id="linkedin-hidden:test1234",
+        ats="linkedin-hidden",
+        company="Tech Recruiter",
+        title="Full-Stack Engineer",
+        location="India / Remote",
+        url="https://www.linkedin.com/posts/techrecruiter_hiring",
+        description="Looking for Full-Stack devs in Bangalore",
+    )
+    monkeypatch.setattr(HiddenJobMarketScanner, "scan", lambda self, max_results_per_query=10: [dummy_job])
+
+    client = TestClient(app)
+    res = client.get("/jobs/linkedin-hidden?limit=1")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) == 1
+    assert data[0]["job_id"] == "linkedin-hidden:test1234"
+    assert data[0]["company"] == "Tech Recruiter"
+    assert isinstance(res.json(), list)
