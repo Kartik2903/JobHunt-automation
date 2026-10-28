@@ -30,7 +30,7 @@
         "description": "Bridge API URL for reverse-engineered LinkedIn and X collectors",
         "id": "env_bridge_api_url",
         "name": "BRIDGE_API_URL",
-        "value": "https://removal-approaches-cooperative-awareness.trycloudflare.com",
+        "value": "https://partially-pictures-gotta-birmingham.trycloudflare.com",
         "value_type": "string"
       }
     ],

@@ -247,14 +247,18 @@ def get_greenhouse_jobs(
     limit: int = Query(20, ge=1, le=50, description="Max jobs to return"),
 ) -> list[dict[str, Any]]:
     """Fetch jobs from Greenhouse public board API with dynamic company, location, and keywords."""
-    company_val = company if isinstance(company, str) else None
-    loc_val = location if isinstance(location, str) else None
-    kw_val = keywords if isinstance(keywords, str) else None
-    limit_val = limit if isinstance(limit, int) else 20
-    slug_str = company_val if company_val and company_val.strip() else ",".join(GH_DEFAULT_SLUGS[:6])
-    slugs = [s.strip() for s in slug_str.split(",") if s.strip()]
-    all_jobs = fetch_board_parallel("greenhouse", slugs)
-    return filter_and_format_jobs(all_jobs, location=loc_val, keywords=kw_val, limit=limit_val)
+    try:
+        company_val = company if isinstance(company, str) and "{" not in company else None
+        loc_val = location if isinstance(location, str) and "{" not in location else None
+        kw_val = keywords if isinstance(keywords, str) and "{" not in keywords else None
+        limit_val = limit if isinstance(limit, int) else 20
+        slug_str = company_val if company_val and company_val.strip() else ",".join(GH_DEFAULT_SLUGS[:6])
+        slugs = [s.strip() for s in slug_str.split(",") if s.strip()]
+        all_jobs = fetch_board_parallel("greenhouse", slugs)
+        return filter_and_format_jobs(all_jobs, location=loc_val, keywords=kw_val, limit=limit_val)
+    except Exception as e:
+        print(f"Error in get_greenhouse_jobs: {e}")
+        return []
 
 
 @app.get("/jobs/lever", response_model=list[JobResponse], tags=["Jobs"])
@@ -265,14 +269,18 @@ def get_lever_jobs(
     limit: int = Query(20, ge=1, le=50, description="Max jobs to return"),
 ) -> list[dict[str, Any]]:
     """Fetch jobs from Lever public board API with dynamic company, location, and keywords."""
-    company_val = company if isinstance(company, str) else None
-    loc_val = location if isinstance(location, str) else None
-    kw_val = keywords if isinstance(keywords, str) else None
-    limit_val = limit if isinstance(limit, int) else 20
-    slug_str = company_val if company_val and company_val.strip() else ",".join(LV_DEFAULT_SLUGS[:5])
-    slugs = [s.strip() for s in slug_str.split(",") if s.strip()]
-    all_jobs = fetch_board_parallel("lever", slugs)
-    return filter_and_format_jobs(all_jobs, location=loc_val, keywords=kw_val, limit=limit_val)
+    try:
+        company_val = company if isinstance(company, str) and "{" not in company else None
+        loc_val = location if isinstance(location, str) and "{" not in location else None
+        kw_val = keywords if isinstance(keywords, str) and "{" not in keywords else None
+        limit_val = limit if isinstance(limit, int) else 20
+        slug_str = company_val if company_val and company_val.strip() else ",".join(LV_DEFAULT_SLUGS[:5])
+        slugs = [s.strip() for s in slug_str.split(",") if s.strip()]
+        all_jobs = fetch_board_parallel("lever", slugs)
+        return filter_and_format_jobs(all_jobs, location=loc_val, keywords=kw_val, limit=limit_val)
+    except Exception as e:
+        print(f"Error in get_lever_jobs: {e}")
+        return []
 
 
 @app.get("/jobs/ashby", response_model=list[JobResponse], tags=["Jobs"])
@@ -283,14 +291,18 @@ def get_ashby_jobs(
     limit: int = Query(20, ge=1, le=50, description="Max jobs to return"),
 ) -> list[dict[str, Any]]:
     """Fetch jobs from Ashby public board API with dynamic company, location, and keywords."""
-    company_val = company if isinstance(company, str) else None
-    loc_val = location if isinstance(location, str) else None
-    kw_val = keywords if isinstance(keywords, str) else None
-    limit_val = limit if isinstance(limit, int) else 20
-    slug_str = company_val if company_val and company_val.strip() else ",".join(ASH_DEFAULT_SLUGS[:6])
-    slugs = [s.strip() for s in slug_str.split(",") if s.strip()]
-    all_jobs = fetch_board_parallel("ashby", slugs)
-    return filter_and_format_jobs(all_jobs, location=loc_val, keywords=kw_val, limit=limit_val)
+    try:
+        company_val = company if isinstance(company, str) and "{" not in company else None
+        loc_val = location if isinstance(location, str) and "{" not in location else None
+        kw_val = keywords if isinstance(keywords, str) and "{" not in keywords else None
+        limit_val = limit if isinstance(limit, int) else 20
+        slug_str = company_val if company_val and company_val.strip() else ",".join(ASH_DEFAULT_SLUGS[:6])
+        slugs = [s.strip() for s in slug_str.split(",") if s.strip()]
+        all_jobs = fetch_board_parallel("ashby", slugs)
+        return filter_and_format_jobs(all_jobs, location=loc_val, keywords=kw_val, limit=limit_val)
+    except Exception as e:
+        print(f"Error in get_ashby_jobs: {e}")
+        return []
 
 
 @app.get("/jobs/linkedin", response_model=list[JobResponse], tags=["Jobs"])
@@ -301,15 +313,19 @@ def get_linkedin_jobs(
     days: int = Query(4, ge=1, le=14, description="Filter for jobs posted in the last N days (default 4 days)"),
 ) -> list[dict[str, Any]]:
     """Fetch LinkedIn jobs via reverse-engineered Voyager API / guest feed with recency filtering."""
-    loc_val = location if isinstance(location, str) else None
-    kw_val = keywords if isinstance(keywords, str) else "Software Engineer, Backend"
-    limit_val = limit if isinstance(limit, int) else 25
-    days_val = days if isinstance(days, int) else 4
-    loc = loc_val or DEFAULT_LOCATIONS[0]
-    client = LinkedInVoyagerClient()
-    kw_primary = kw_val.split(",")[0].strip()
-    jobs = client.search_jobs(keywords=kw_primary, location=loc, limit=limit_val, days=days_val)
-    return filter_and_format_jobs(jobs, location=loc_val, keywords=kw_val, limit=limit_val)
+    try:
+        loc_val = location if isinstance(location, str) and "{" not in location else None
+        kw_val = keywords if isinstance(keywords, str) and "{" not in keywords else "Software Engineer, Backend"
+        limit_val = limit if isinstance(limit, int) else 25
+        days_val = days if isinstance(days, int) else 4
+        loc = loc_val or DEFAULT_LOCATIONS[0]
+        client = LinkedInVoyagerClient()
+        kw_primary = kw_val.split(",")[0].strip()
+        jobs = client.search_jobs(keywords=kw_primary, location=loc, limit=limit_val, days=days_val)
+        return filter_and_format_jobs(jobs, location=loc_val, keywords=kw_val, limit=limit_val)
+    except Exception as e:
+        print(f"Error in get_linkedin_jobs: {e}")
+        return []
 
 
 @app.get("/jobs/x", response_model=list[JobResponse], tags=["Jobs"])
@@ -321,20 +337,24 @@ def get_x_jobs(
     days: int = Query(4, ge=1, le=14, description="Filter for posts created in the last N days (default 4 days)"),
 ) -> list[dict[str, Any]]:
     """Search tech hiring announcements and founder posts on X with recency filtering."""
-    query_val = query if isinstance(query, str) else None
-    kw_val = keywords if isinstance(keywords, str) else "Software Engineer"
-    loc_val = location if isinstance(location, str) else None
-    count_val = count if isinstance(count, int) else 25
-    days_val = days if isinstance(days, int) else 4
+    try:
+        query_val = query if isinstance(query, str) and "{" not in query else None
+        kw_val = keywords if isinstance(keywords, str) and "{" not in keywords else "Software Engineer"
+        loc_val = location if isinstance(location, str) and "{" not in location else None
+        count_val = count if isinstance(count, int) else 25
+        days_val = days if isinstance(days, int) else 4
 
-    client = XSearchClient()
-    loc = loc_val or DEFAULT_LOCATIONS[0]
-    if not query_val:
-        kw = kw_val
-        kw_formatted = " OR ".join(f'"{k.strip()}"' if " " in k.strip() else k.strip() for k in kw.split(",") if k.strip())
-        query_val = f'(hiring OR "we are hiring") ({kw_formatted}) {loc}'
-    jobs = client.search_hiring(query=query_val, count=count_val, days=days_val)
-    return filter_and_format_jobs(jobs, location=loc_val, keywords=kw_val, limit=count_val)
+        client = XSearchClient()
+        loc = loc_val or DEFAULT_LOCATIONS[0]
+        if not query_val:
+            kw = kw_val
+            kw_formatted = " OR ".join(f'"{k.strip()}"' if " " in k.strip() else k.strip() for k in kw.split(",") if k.strip())
+            query_val = f'(hiring OR "we are hiring") ({kw_formatted}) {loc}'
+        jobs = client.search_hiring(query=query_val, count=count_val, days=days_val)
+        return filter_and_format_jobs(jobs, location=loc_val, keywords=kw_val, limit=count_val)
+    except Exception as e:
+        print(f"Error in get_x_jobs: {e}")
+        return []
 
 
 @app.get("/jobs/feed", response_model=list[JobResponse], tags=["Jobs"])
