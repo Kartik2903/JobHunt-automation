@@ -2,10 +2,10 @@ name: daily job digest
 
 on:
   schedule:
-    # 06:00 IST, weekdays. IST is UTC+5:30, so 06:00 IST == 00:30 UTC.
+    # 06:00 IST every day. IST is UTC+5:30, so 06:00 IST == 00:30 UTC.
     # GitHub's scheduler is best-effort and can lag by several minutes under
     # load — that is fine for a job digest, do not tighten it.
-    - cron: "30 0 * * 1-5"
+    - cron: "30 0 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -67,14 +67,20 @@ jobs:
 
       - name: Run the pipeline
         env:
-          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}
+          LLM_FALLBACK_PROVIDERS: ${{ vars.LLM_FALLBACK_PROVIDERS || 'mistral,cerebras,sambanova,groq' }}
           SCREEN_PROVIDER: ${{ vars.SCREEN_PROVIDER }}
           DRAFT_PROVIDER: ${{ vars.DRAFT_PROVIDER }}
+          PROFILE_PROVIDER: ${{ vars.PROFILE_PROVIDER }}
           SCREEN_MODEL: ${{ vars.SCREEN_MODEL }}
           DRAFT_MODEL: ${{ vars.DRAFT_MODEL }}
+          PROFILE_MODEL: ${{ vars.PROFILE_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}

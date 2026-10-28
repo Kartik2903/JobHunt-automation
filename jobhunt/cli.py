@@ -67,7 +67,9 @@ def cmd_profile(args) -> int:
     is_pdf = src.suffix.lower() == ".pdf"
 
     try:
-        provider, model = resolve("draft")
+        # PDF profile extraction needs a vision model. Keep this independently
+        # configurable from the text-only drafting model via PROFILE_MODEL.
+        provider, model = resolve("profile")
         print(f"reading {src.name} via {provider.name}/{model} ...")
         profile = llm.build_profile(
             resume_bytes=src.read_bytes() if is_pdf else None,

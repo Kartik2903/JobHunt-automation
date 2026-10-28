@@ -162,6 +162,9 @@ Open `.env` in any text editor and set:
 ```bash
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=paste-your-key-here
+SCREEN_MODEL=gemini-3.6-flash
+DRAFT_MODEL=gemini-3.6-flash
+PROFILE_MODEL=gemini-3.6-flash
 ```
 
 Now check which models your key can actually use — model names change often,
@@ -175,7 +178,7 @@ Pick a fast/cheap model for screening and a stronger one for drafting, and put
 them in `.env`:
 
 ```bash
-SCREEN_MODEL=gemini-3.5-flash-lite
+SCREEN_MODEL=gemini-3.6-flash
 DRAFT_MODEL=gemini-3.6-flash
 ```
 
@@ -344,6 +347,9 @@ for you on a schedule, for free, with your laptop closed.
    |---|---|
    | `PROFILE_JSON` | the entire contents of your local `profile.json`, pasted |
    | `GEMINI_API_KEY` | your key (or `GROQ_API_KEY` / `ANTHROPIC_API_KEY`) |
+   | `MISTRAL_API_KEY` | optional fallback provider key |
+   | `CEREBRAS_API_KEY` | optional fallback provider key |
+   | `SAMBANOVA_API_KEY` | optional fallback provider key |
    | `SMTP_USER` | your Gmail address |
    | `SMTP_PASS` | your 16-character App Password |
    | `MAIL_TO` | where the digest should go |
@@ -353,8 +359,12 @@ for you on a schedule, for free, with your laptop closed.
    | Variable | Value |
    |---|---|
    | `LLM_PROVIDER` | `gemini` |
-   | `SCREEN_MODEL` | `gemini-3.5-flash-lite` |
+   | `SCREEN_MODEL` | `gemini-3.6-flash` |
    | `DRAFT_MODEL` | `gemini-3.6-flash` |
+
+   To use a fallback for one stage, add its secret above and set the matching
+   variable, such as `SCREEN_PROVIDER=cerebras` and
+   `SCREEN_MODEL=qwen-3.8-27b`.
 
 3. Go to the **Actions** tab and enable workflows (forks start with them off).
 

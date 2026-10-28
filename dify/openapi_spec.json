@@ -1,0 +1,1106 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "JobHunt Cloud Bridge API",
+    "description": "Lightweight Bridge API for Dify.ai to search ATS boards, LinkedIn, X, and submit applications with dynamic company, location, and keyword filters loaded from config.yaml and companies.yaml.",
+    "version": "1.3.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Check Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/greenhouse": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get Greenhouse Jobs",
+        "description": "Fetch jobs from Greenhouse public board API with dynamic company, location, and keywords.",
+        "operationId": "get_greenhouse_jobs_jobs_greenhouse_get",
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Company slug or comma-separated slugs. If omitted, uses companies.yaml Greenhouse list",
+              "title": "Company"
+            },
+            "description": "Company slug or comma-separated slugs. If omitted, uses companies.yaml Greenhouse list"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Location filter. If omitted, uses config.yaml locations (bangalore, pune, hyderabad, india)",
+              "title": "Location"
+            },
+            "description": "Location filter. If omitted, uses config.yaml locations (bangalore, pune, hyderabad, india)"
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Keywords substring filter e.g. Full Stack, Backend, SDE",
+              "title": "Keywords"
+            },
+            "description": "Keywords substring filter e.g. Full Stack, Backend, SDE"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Max jobs to return",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Max jobs to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  },
+                  "title": "Response Get Greenhouse Jobs Jobs Greenhouse Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/lever": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get Lever Jobs",
+        "description": "Fetch jobs from Lever public board API with dynamic company, location, and keywords.",
+        "operationId": "get_lever_jobs_jobs_lever_get",
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Company slug or comma-separated slugs. If omitted, uses companies.yaml Lever list",
+              "title": "Company"
+            },
+            "description": "Company slug or comma-separated slugs. If omitted, uses companies.yaml Lever list"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Location filter. If omitted, uses config.yaml locations (bangalore, pune, hyderabad, india)",
+              "title": "Location"
+            },
+            "description": "Location filter. If omitted, uses config.yaml locations (bangalore, pune, hyderabad, india)"
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Keywords substring filter e.g. Full Stack, Backend, SDE",
+              "title": "Keywords"
+            },
+            "description": "Keywords substring filter e.g. Full Stack, Backend, SDE"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Max jobs to return",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Max jobs to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  },
+                  "title": "Response Get Lever Jobs Jobs Lever Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/ashby": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get Ashby Jobs",
+        "description": "Fetch jobs from Ashby public board API with dynamic company, location, and keywords.",
+        "operationId": "get_ashby_jobs_jobs_ashby_get",
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Company slug or comma-separated slugs. If omitted, uses companies.yaml Ashby list",
+              "title": "Company"
+            },
+            "description": "Company slug or comma-separated slugs. If omitted, uses companies.yaml Ashby list"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Location filter. If omitted, uses config.yaml locations (bangalore, pune, hyderabad, india)",
+              "title": "Location"
+            },
+            "description": "Location filter. If omitted, uses config.yaml locations (bangalore, pune, hyderabad, india)"
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Keywords substring filter e.g. Full Stack, Backend, SDE",
+              "title": "Keywords"
+            },
+            "description": "Keywords substring filter e.g. Full Stack, Backend, SDE"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Max jobs to return",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Max jobs to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  },
+                  "title": "Response Get Ashby Jobs Jobs Ashby Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/linkedin": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get Linkedin Jobs",
+        "description": "Fetch LinkedIn jobs via reverse-engineered Voyager API / guest feed with recency filtering.",
+        "operationId": "get_linkedin_jobs_jobs_linkedin_get",
+        "parameters": [
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search keywords",
+              "default": "Software Engineer, Backend",
+              "title": "Keywords"
+            },
+            "description": "Search keywords"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Target city or country. If omitted, uses config.yaml location",
+              "title": "Location"
+            },
+            "description": "Target city or country. If omitted, uses config.yaml location"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Max jobs to return",
+              "default": 25,
+              "title": "Limit"
+            },
+            "description": "Max jobs to return"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 14,
+              "minimum": 1,
+              "description": "Filter for jobs posted in the last N days (default 4 days)",
+              "default": 4,
+              "title": "Days"
+            },
+            "description": "Filter for jobs posted in the last N days (default 4 days)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  },
+                  "title": "Response Get Linkedin Jobs Jobs Linkedin Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/x": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get X Jobs",
+        "description": "Search tech hiring announcements and founder posts on X with recency filtering.",
+        "operationId": "get_x_jobs_jobs_x_get",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Custom X hiring query. If omitted, built from keywords and location",
+              "title": "Query"
+            },
+            "description": "Custom X hiring query. If omitted, built from keywords and location"
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search keywords e.g. Full Stack, Backend, SDE",
+              "default": "Software Engineer",
+              "title": "Keywords"
+            },
+            "description": "Search keywords e.g. Full Stack, Backend, SDE"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Target location filter",
+              "title": "Location"
+            },
+            "description": "Target location filter"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Max tweets to inspect",
+              "default": 25,
+              "title": "Count"
+            },
+            "description": "Max tweets to inspect"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 14,
+              "minimum": 1,
+              "description": "Filter for posts created in the last N days (default 4 days)",
+              "default": 4,
+              "title": "Days"
+            },
+            "description": "Filter for posts created in the last N days (default 4 days)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  },
+                  "title": "Response Get X Jobs Jobs X Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/feed": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get Aggregated Job Feed",
+        "description": "Aggregates postings across Greenhouse, Lever, Ashby, LinkedIn, and X with dynamic filtering from config.yaml, keeping payload < 100 KB.",
+        "operationId": "get_aggregated_job_feed_jobs_feed_get",
+        "parameters": [
+          {
+            "name": "companies",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated company slugs e.g. stripe,figma,postman,levelai,linear. If empty, uses configured companies",
+              "title": "Companies"
+            },
+            "description": "Comma-separated company slugs e.g. stripe,figma,postman,levelai,linear. If empty, uses configured companies"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Target location filter. If empty, uses config.yaml locations",
+              "title": "Location"
+            },
+            "description": "Target location filter. If empty, uses config.yaml locations"
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Target keywords filter",
+              "title": "Keywords"
+            },
+            "description": "Target keywords filter"
+          },
+          {
+            "name": "include_ats",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include Greenhouse, Lever, and Ashby postings",
+              "default": true,
+              "title": "Include Ats"
+            },
+            "description": "Include Greenhouse, Lever, and Ashby postings"
+          },
+          {
+            "name": "include_linkedin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include reverse-engineered LinkedIn jobs",
+              "default": true,
+              "title": "Include Linkedin"
+            },
+            "description": "Include reverse-engineered LinkedIn jobs"
+          },
+          {
+            "name": "include_x",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include X / Twitter tech hiring posts",
+              "default": true,
+              "title": "Include X"
+            },
+            "description": "Include X / Twitter tech hiring posts"
+          },
+          {
+            "name": "limit_per_source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Max jobs to sample per board/platform",
+              "default": 20,
+              "title": "Limit Per Source"
+            },
+            "description": "Max jobs to sample per board/platform"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 14,
+              "minimum": 1,
+              "description": "Recency filter in days for LinkedIn and X postings",
+              "default": 4,
+              "title": "Days"
+            },
+            "description": "Recency filter in days for LinkedIn and X postings"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  },
+                  "title": "Response Get Aggregated Job Feed Jobs Feed Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/apply": {
+      "post": {
+        "tags": [
+          "Apply"
+        ],
+        "summary": "Apply To Job",
+        "description": "Submit or prepare job application.",
+        "operationId": "apply_to_job_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notify/email": {
+      "post": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Send Email Notification",
+        "description": "Sends the formatted digest directly to your configured Gmail inbox.",
+        "operationId": "send_email_notification_notify_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailNotifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailNotifyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApplyRequest": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "Unique identifier for the job (e.g. greenhouse:slug:123)"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "Application or job posting URL"
+          },
+          "cover_letter": {
+            "type": "string",
+            "title": "Cover Letter",
+            "description": "Tailored cover note drafted by LLM",
+            "default": ""
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "When true, validates form data without final dispatch",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "url"
+        ],
+        "title": "ApplyRequest"
+      },
+      "ApplyResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "dry_run"
+        ],
+        "title": "ApplyResponse"
+      },
+      "EmailNotifyRequest": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "description": "Subject line for email",
+            "default": "🦞 JobHunt Digest: Filtered Opportunities"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "Markdown or text content of the digest"
+          },
+          "to_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Email",
+            "description": "Recipient email (defaults to MAIL_TO from .env)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "EmailNotifyRequest"
+      },
+      "EmailNotifyResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "EmailNotifyResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "JobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "Unique job ID e.g. linkedin:123 or greenhouse:stripe:456"
+          },
+          "ats": {
+            "type": "string",
+            "title": "Ats",
+            "description": "Source platform or ATS name"
+          },
+          "company": {
+            "type": "string",
+            "title": "Company",
+            "description": "Company name or posting author"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "Job role title"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Job location"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "Direct posting link"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Truncated clean job description or tweet content (< 800 chars)"
+          },
+          "posted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "ats",
+          "company",
+          "title",
+          "location",
+          "url",
+          "description"
+        ],
+        "title": "JobResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

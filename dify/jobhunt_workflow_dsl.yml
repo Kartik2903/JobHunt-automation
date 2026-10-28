@@ -1,0 +1,875 @@
+app:
+  description: Autonomous job hunting workflow for Greenhouse, Lever, Ashby, LinkedIn,
+    and X. Features multi-source fetching, deterministic regex pre-filtering (zero-cost),
+    strict LLM resume screening, tailored application drafting (bullets + cover notes),
+    and automated application submitter.
+  icon: 🦞
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: JobHunt AI Workflow
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: Candidate profile JSON
+    id: env_candidate_profile
+    name: CANDIDATE_PROFILE
+    value: '{"name":"Kartik Dewnani","current_title":"Full-stack Engineer Intern","years_experience":0.5,"core_skills":["TypeScript","JavaScript","Node.js","Python","PostgreSQL","React","Next.js","Docker","Go","FastAPI","React
+      Native","MySQL","Redis","RAG Pipelines","LLM Integration"],"domains":["full-stack
+      development","backend engineering","mobile app development","AI / LLM integration","distributed
+      systems"],"education":"MCA, CHRIST University (2025-2027)","target_titles":["Full-Stack
+      Engineer","Backend Engineer","Software Development Engineer (SDE I)","Software
+      Engineer Intern"],"seniority":"intern"}'
+    value_type: string
+  - description: Minimum score (0-10) to qualify for drafting
+    id: env_score_threshold
+    name: SCORE_THRESHOLD
+    value: '7.0'
+    value_type: string
+  - description: Bridge API URL for reverse-engineered LinkedIn and X collectors
+    id: env_bridge_api_url
+    name: BRIDGE_API_URL
+    value: https://removal-approaches-cooperative-awareness.trycloudflare.com
+    value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions: []
+      allowed_file_types: []
+      allowed_file_upload_methods:
+      - remote_url
+      - local_file
+      enabled: false
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - remote_url
+        - local_file
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+      id: edge_start_to_gh
+      source: start_node
+      sourceHandle: source
+      sourceType: start
+      target: fetch_greenhouse
+      targetHandle: target
+      targetType: http-request
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_gh_to_lv
+      source: fetch_greenhouse
+      sourceHandle: source
+      sourceType: http-request
+      target: fetch_lever
+      targetHandle: target
+      targetType: http-request
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_lv_to_ash
+      source: fetch_lever
+      sourceHandle: source
+      sourceType: http-request
+      target: fetch_ashby
+      targetHandle: target
+      targetType: http-request
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_ash_to_li
+      source: fetch_ashby
+      sourceHandle: source
+      sourceType: http-request
+      target: fetch_linkedin
+      targetHandle: target
+      targetType: http-request
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_li_to_x
+      source: fetch_linkedin
+      sourceHandle: source
+      sourceType: http-request
+      target: fetch_x
+      targetHandle: target
+      targetType: http-request
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_x_to_prefilter
+      source: fetch_x
+      sourceHandle: source
+      sourceType: http-request
+      target: prefilter_code
+      targetHandle: target
+      targetType: code
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_prefilter_to_screen
+      source: prefilter_code
+      sourceHandle: source
+      sourceType: code
+      target: screen_llm
+      targetHandle: target
+      targetType: llm
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_screen_to_draft
+      source: screen_llm
+      sourceHandle: source
+      sourceType: llm
+      target: draft_llm
+      targetHandle: target
+      targetType: llm
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_draft_to_digest
+      source: draft_llm
+      sourceHandle: source
+      sourceType: llm
+      target: format_digest
+      targetHandle: target
+      targetType: code
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_digest_to_apply
+      source: format_digest
+      sourceHandle: source
+      sourceType: code
+      target: send_email
+      targetHandle: target
+      targetType: http-request
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+      id: edge_apply_to_end
+      source: apply_action
+      sourceHandle: source
+      sourceType: http-request
+      target: end_node
+      targetHandle: target
+      targetType: end
+      type: custom
+      zIndex: 0
+    - id: edge_email_to_apply
+      source: send_email
+      sourceHandle: source
+      sourceType: http-request
+      target: apply_action
+      targetHandle: target
+      targetType: http-request
+      type: custom
+      zIndex: 0
+      data:
+        isInIteration: false
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: Greenhouse Companies (from companies.yaml)
+          max_length: 250
+          options: []
+          required: false
+          type: text-input
+          variable: greenhouse_companies
+          default: stripe, databricks, figma, dropbox, coinbase, reddit, razorpaysoftwareprivatelimited,
+            postman, cloudflare, abnormalsecurity, discord
+        - label: Lever Companies (from companies.yaml)
+          max_length: 250
+          options: []
+          required: false
+          type: text-input
+          variable: lever_companies
+          default: voleon, levelai, weekdayworks, omnidian, zimperium, spotify, palantir
+        - label: Ashby Companies (from companies.yaml)
+          max_length: 350
+          options: []
+          required: false
+          type: text-input
+          variable: ashby_companies
+          default: openai, ramp, linear, vanta, aiprise, collinear-ai, build-ai, genera,
+            avoca, spector-ai, supabase, notion, replit, docker, posthog, cursor,
+            elevenlabs
+        - label: Target Locations (from config.yaml)
+          max_length: 150
+          options: []
+          required: false
+          type: text-input
+          variable: target_location
+          default: bangalore, bengaluru, pune, hyderabad, india
+        - label: Target Keywords / Roles (from config.yaml)
+          max_length: 150
+          options: []
+          required: false
+          type: text-input
+          variable: target_keywords
+          default: sde, sde 1, software engineer, backend, full stack, junior, intern,
+            associate
+        - label: Run Mode
+          max_length: 50
+          options:
+          - dry_run
+          - production
+          required: false
+          type: select
+          variable: run_mode
+          default: dry_run
+      height: 88
+      id: start_node
+      position:
+        x: 80
+        y: 280
+      positionAbsolute:
+        x: 80
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        desc: Lightweight Greenhouse board query (< 500 KB)
+        headers: 'Accept: application/json'
+        method: get
+        params: ''
+        selected: false
+        timeout:
+          connect: 10
+          max_retries: 0
+          read: 30
+          write: 10
+        title: Fetch Greenhouse
+        type: http-request
+        url: '{{#env.BRIDGE_API_URL#}}/jobs/greenhouse?company={{#start_node.greenhouse_companies#}}&location={{#start_node.target_location#}}&keywords={{#start_node.target_keywords#}}&limit=15'
+      height: 106
+      id: fetch_greenhouse
+      position:
+        x: 380
+        y: 280
+      positionAbsolute:
+        x: 380
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        desc: Lightweight Lever postings query (< 100 KB)
+        headers: 'Accept: application/json'
+        method: get
+        params: ''
+        selected: false
+        timeout:
+          connect: 10
+          max_retries: 0
+          read: 30
+          write: 10
+        title: Fetch Lever
+        type: http-request
+        url: '{{#env.BRIDGE_API_URL#}}/jobs/lever?company={{#start_node.lever_companies#}}&location={{#start_node.target_location#}}&keywords={{#start_node.target_keywords#}}&limit=15'
+      height: 106
+      id: fetch_lever
+      position:
+        x: 680
+        y: 280
+      positionAbsolute:
+        x: 680
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        desc: Lightweight Ashby postings query (< 500 KB)
+        headers: 'Accept: application/json'
+        method: get
+        params: ''
+        selected: false
+        timeout:
+          connect: 10
+          max_retries: 0
+          read: 30
+          write: 10
+        title: Fetch Ashby
+        type: http-request
+        url: '{{#env.BRIDGE_API_URL#}}/jobs/ashby?company={{#start_node.ashby_companies#}}&location={{#start_node.target_location#}}&keywords={{#start_node.target_keywords#}}&limit=15'
+      height: 106
+      id: fetch_ashby
+      position:
+        x: 980
+        y: 280
+      positionAbsolute:
+        x: 980
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        desc: Reverse-engineered LinkedIn Voyager API client via Bridge (< 50 KB)
+        headers: 'Accept: application/json'
+        method: get
+        params: ''
+        selected: false
+        timeout:
+          connect: 10
+          max_retries: 0
+          read: 30
+          write: 10
+        title: Fetch LinkedIn (Bridge)
+        type: http-request
+        url: '{{#env.BRIDGE_API_URL#}}/jobs/linkedin?keywords={{#start_node.target_keywords#}}&location={{#start_node.target_location#}}&limit=25&days=4'
+      height: 106
+      id: fetch_linkedin
+      position:
+        x: 1280
+        y: 280
+      positionAbsolute:
+        x: 1280
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        desc: Reverse-engineered X GraphQL search client via Bridge (< 50 KB)
+        headers: 'Accept: application/json'
+        method: get
+        params: ''
+        selected: false
+        timeout:
+          connect: 10
+          max_retries: 0
+          read: 30
+          write: 10
+        title: Fetch X / Twitter (Bridge)
+        type: http-request
+        url: '{{#env.BRIDGE_API_URL#}}/jobs/x?keywords={{#start_node.target_keywords#}}&location={{#start_node.target_location#}}&count=25&days=4'
+      height: 106
+      id: fetch_x
+      position:
+        x: 1580
+        y: 280
+      positionAbsolute:
+        x: 1580
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import json\nimport re\n\ndef parse_source(body, default_ats):\n  \
+          \  if not body:\n        return []\n    try:\n        data = json.loads(body)\
+          \ if isinstance(body, str) else body\n        if isinstance(data, list):\n\
+          \            res = []\n            for idx, j in enumerate(data):\n    \
+          \            if isinstance(j, dict) and j.get(\"title\"):\n            \
+          \        res.append({\n                        \"job_id\": str(j.get(\"\
+          job_id\") or f\"{default_ats}:{idx}\"),\n                        \"company\"\
+          : str(j.get(\"company\") or default_ats.capitalize()),\n               \
+          \         \"title\": str(j.get(\"title\") or \"\"),\n                  \
+          \      \"location\": str(j.get(\"location\") or \"Remote\"),\n         \
+          \               \"url\": str(j.get(\"url\") or \"\"),\n                \
+          \        \"description\": str(j.get(\"description\") or \"\")[:1200],\n\
+          \                        \"source\": default_ats.capitalize(),\n       \
+          \             })\n            return res\n        elif isinstance(data,\
+          \ dict):\n            res = []\n            for idx, j in enumerate(data.get(\"\
+          jobs\", [])):\n                loc_raw = j.get(\"location\")\n         \
+          \       loc = loc_raw.get(\"name\", \"Remote\") if isinstance(loc_raw, dict)\
+          \ else str(loc_raw or \"Remote\")\n                res.append({\n      \
+          \              \"job_id\": f\"{default_ats}:{j.get('id', idx)}\",\n    \
+          \                \"company\": default_ats.capitalize(),\n              \
+          \      \"title\": str(j.get(\"title\") or \"\"),\n                    \"\
+          location\": loc,\n                    \"url\": str(j.get(\"absolute_url\"\
+          ) or j.get(\"jobUrl\") or \"\"),\n                    \"description\": str(j.get(\"\
+          descriptionPlain\") or j.get(\"title\") or \"\")[:1200],\n             \
+          \       \"source\": default_ats.capitalize(),\n                })\n    \
+          \        return res\n    except Exception:\n        pass\n    return []\n\
+          \nraw_jobs = []\nraw_jobs.extend(parse_source(gh_body, \"greenhouse\"))\n\
+          raw_jobs.extend(parse_source(lv_body, \"lever\"))\nraw_jobs.extend(parse_source(ash_body,\
+          \ \"ashby\"))\nraw_jobs.extend(parse_source(li_body, \"linkedin\"))\nraw_jobs.extend(parse_source(x_body,\
+          \ \"x\"))\n\n# Config.yaml regex patterns (tuned for Fresher / 0-1 Year\
+          \ Experience)\nkw_terms = [k.strip() for k in target_keywords.split(\",\"\
+          ) if k.strip()] if target_keywords else [\n    \"sde\", \"sde 1\", \"software\
+          \ engineer\", \"backend\", \"full stack\", \"junior\", \"intern\", \"associate\"\
+          \n]\nkw_pattern = \"|\".join(re.escape(k) for k in kw_terms)\ninc_pat =\
+          \ re.compile(rf\"(?i)\\b({kw_pattern})\\b\")\n\n# Exclude patterns: senior\
+          \ tiers and non-engineering operations (KEEP interns and freshers!)\nexc_pat\
+          \ = re.compile(\n    r\"(?i)\\b(\"\n    r\"staff|principal|distinguished|fellow|architect|senior|director|vp|vice\
+          \ president|head of|chief|cto|manager|management|lead|\"\n    r\"sde\\s*[-_\
+          \ ]*(2|3|4|ii|iii|iv)|software engineer\\s*[-_ ]*(2|3|ii|iii)|swe\\s*[-_\
+          \ ]*(2|3|ii|iii)|\"\n    r\"people operations|human resources|\\bhr\\b|talent|recruiter|recruiting|sourcer|\"\
+          \n    r\"administrator|admin|sysadmin|systems admin|\"\n    r\"sales|account\
+          \ executive|marketing|finance|payroll|accounting|legal|compliance|procurement|\"\
+          \n    r\"customer support|tech support|desktop support|helpdesk\"\n    r\"\
+          )\\b\"\n)\n\n# Locations from config.yaml\nloc_list = [l.strip().lower()\
+          \ for l in target_location.split(\",\") if l.strip()] if target_location\
+          \ and target_location.lower() not in (\"all\", \"any\") else [\n    \"bangalore\"\
+          , \"bengaluru\", \"pune\", \"hyderabad\", \"india\"\n]\n\npassed = []\n\
+          for j in raw_jobs:\n    title = j.get(\"title\", \"\")\n    loc = j.get(\"\
+          location\", \"\").lower()\n    hay = f\"{loc} {title.lower()}\"\n    if\
+          \ not inc_pat.search(title):\n        continue\n    if exc_pat and exc_pat.search(title):\n\
+          \        continue\n    if loc_list and not any(l in hay for l in loc_list):\n\
+          \        continue\n    passed.append(j)\n\nreturn {\n    \"total_fetched\"\
+          : len(raw_jobs),\n    \"passed_count\": len(passed),\n    \"candidate_jobs\"\
+          : json.dumps(passed[:12])\n}\n"
+        code_language: python3
+        desc: Multi-source deterministic prefilter combining Greenhouse, Lever, Ashby,
+          LinkedIn, and X
+        outputs:
+          candidate_jobs:
+            type: string
+          passed_count:
+            type: number
+          total_fetched:
+            type: number
+        selected: false
+        title: Deterministic Prefilter
+        type: code
+        variables:
+        - value_selector:
+          - fetch_greenhouse
+          - body
+          variable: gh_body
+        - value_selector:
+          - fetch_lever
+          - body
+          variable: lv_body
+        - value_selector:
+          - fetch_ashby
+          - body
+          variable: ash_body
+        - value_selector:
+          - fetch_linkedin
+          - body
+          variable: li_body
+        - value_selector:
+          - fetch_x
+          - body
+          variable: x_body
+        - value_selector:
+          - start_node
+          - target_keywords
+          variable: target_keywords
+        - value_selector:
+          - start_node
+          - target_location
+          variable: target_location
+      height: 120
+      id: prefilter_code
+      position:
+        x: 1880
+        y: 280
+      positionAbsolute:
+        x: 1880
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - id: prompt_screen_sys
+          role: system
+          text: 'You screen job postings for one candidate: a Fresher / Early Career
+            Engineer (0-1 YOE, currently Full-stack Engineer Intern, MCA student,
+            stack: TypeScript, Python, Go, Node.js, React, PostgreSQL).
+
+
+            SCORING GUIDELINES (0-10):
+
+            - 8-10: Strong match for a Fresher, SDE 1, Junior, Associate, or Intern
+            role matching candidate stack (TypeScript/Python/Go/Full-Stack/Backend).
+
+            - 6-7: Plausible entry-level role, worth applying.
+
+            - 0-4: Seniority mismatch (roles demanding 3+ years experience, Senior/Staff/Lead),
+            wrong stack, or non-engineering roles (Operations/HR/Admin).
+
+
+            Penalize roles demanding 3+ years of experience heavily (score <= 4.0).
+
+            Reward genuine 0-1 YOE, SDE-1, and Intern opportunities.
+
+            Return ONLY a valid JSON array, one object per job:
+
+            [{"job_id": "...", "score": 8.5, "reason": "1-sentence deciding factor
+            max 20 words"}]
+
+            '
+        - id: prompt_screen_user
+          role: user
+          text: 'CANDIDATE PROFILE:
+
+            {{#env.CANDIDATE_PROFILE#}}
+
+
+            JOBS TO EVALUATE:
+
+            {{#prefilter_code.candidate_jobs#}}
+
+            '
+        selected: false
+        title: Strict LLM Screening
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: screen_llm
+      position:
+        x: 2180
+        y: 280
+      positionAbsolute:
+        x: 2180
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.3
+          mode: chat
+          name: gpt-4o-mini
+          provider: openai
+        prompt_template:
+        - id: prompt_draft_sys
+          role: system
+          text: "You prepare an application kit for jobs that scored >= 7.0.\nHard\
+            \ rule: NEVER invent experience. Every claim must trace to candidate profile.\n\
+            \nReturn a JSON array of drafted kits:\n[{\n  \"job_id\": \"...\",\n \
+            \ \"fit_summary\": \"2 sentences why this is worth time\",\n  \"tailored_bullets\"\
+            : [\"bullet 1 with metrics\", \"bullet 2 with metrics\"],\n  \"gaps\"\
+            : [\"honest gap and how to address it\"],\n  \"cover_note\": \"120-160\
+            \ words, direct, no generic 'I am writing to express my interest' filler\"\
+            ,\n  \"questions_to_ask\": [\"sharp question 1\", \"sharp question 2\"\
+            ]\n}]\n"
+        - id: prompt_draft_user
+          role: user
+          text: 'CANDIDATE PROFILE:
+
+            {{#env.CANDIDATE_PROFILE#}}
+
+
+            SCREENING SCORES:
+
+            {{#screen_llm.text#}}
+
+
+            JOB DETAILS:
+
+            {{#prefilter_code.candidate_jobs#}}
+
+            '
+        selected: false
+        title: Tailored Application Drafting
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: draft_llm
+      position:
+        x: 2480
+        y: 280
+      positionAbsolute:
+        x: 2480
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import json\nimport re\n\ndef extract_json(raw):\n    if not raw:\n\
+          \        return []\n    if isinstance(raw, (list, dict)):\n        return\
+          \ raw\n    text = str(raw).strip()\n    text = re.sub(r\"^```(?:json)?\\\
+          s*\", \"\", text, flags=re.I)\n    text = re.sub(r\"\\s*```$\", \"\", text)\n\
+          \    m = re.search(r\"(\\[[\\s\\S]*\\]|\\{[\\s\\S]*\\})\", text)\n    if\
+          \ m:\n        text = m.group(1)\n    try:\n        return json.loads(text)\n\
+          \    except Exception:\n        return []\n\ndef main(screen_raw: str, draft_raw:\
+          \ str, candidate_jobs_json: str, run_mode: str = \"dry_run\") -> dict:\n\
+          \    scores = {}\n    s_data = extract_json(screen_raw)\n    if isinstance(s_data,\
+          \ list):\n        for item in s_data:\n            if isinstance(item, dict)\
+          \ and item.get(\"job_id\"):\n                scores[str(item.get(\"job_id\"\
+          ))] = item\n    elif isinstance(s_data, dict):\n        for v in s_data.values():\n\
+          \            if isinstance(v, list):\n                for item in v:\n \
+          \                   if isinstance(item, dict) and item.get(\"job_id\"):\n\
+          \                        scores[str(item.get(\"job_id\"))] = item\n\n  \
+          \  drafts = {}\n    d_data = extract_json(draft_raw)\n    if isinstance(d_data,\
+          \ list):\n        for item in d_data:\n            if isinstance(item, dict)\
+          \ and item.get(\"job_id\"):\n                drafts[str(item.get(\"job_id\"\
+          ))] = item\n    elif isinstance(d_data, dict):\n        for v in d_data.values():\n\
+          \            if isinstance(v, list):\n                for item in v:\n \
+          \                   if isinstance(item, dict) and item.get(\"job_id\"):\n\
+          \                        drafts[str(item.get(\"job_id\"))] = item\n\n  \
+          \  jobs = []\n    j_data = extract_json(candidate_jobs_json)\n    if isinstance(j_data,\
+          \ list):\n        jobs = j_data\n\n    is_dry_run = (str(run_mode).lower()\
+          \ != \"production\")\n    status_label = \"\U0001F680 Applied (Dry Run)\"\
+          \ if is_dry_run else \"✅ Applied\"\n\n    MIN_SCORE_THRESHOLD = 6.0\n  \
+          \  md_cards = []\n    applied_roles = []\n    top_job_id = \"\"\n    top_job_url\
+          \ = \"\"\n    top_cover_note = \"\"\n\n    # Sort candidates by score descending\n\
+          \    scored = []\n    for job in jobs:\n        jid = str(job.get(\"job_id\"\
+          ) or \"\")\n        jid_suffix = jid.split(\":\")[-1] if \":\" in jid else\
+          \ jid\n        score_info = scores.get(jid) or scores.get(jid_suffix) or\
+          \ {}\n        score = float(score_info.get(\"score\") or 0)\n        reason\
+          \ = score_info.get(\"reason\") or \"Evaluated match\"\n        draft = drafts.get(jid)\
+          \ or drafts.get(jid_suffix) or {}\n        scored.append((score, job, reason,\
+          \ draft))\n\n    scored.sort(key=lambda x: x[0], reverse=True)\n\n    for\
+          \ score, job, reason, draft in scored:\n        # Strict threshold check:\
+          \ Only include roles that passed the screening check!\n        if score\
+          \ < MIN_SCORE_THRESHOLD:\n            continue\n\n        jid = str(job.get(\"\
+          job_id\") or \"\")\n        source = job.get(\"source\", \"ATS\")\n    \
+          \    title = job.get(\"title\", \"\")\n        company = job.get(\"company\"\
+          , \"\")\n        location = job.get(\"location\", \"\")\n        url = job.get(\"\
+          url\", \"\")\n        cover_note = draft.get(\"cover_note\", \"\")\n\n \
+          \       applied_roles.append({\n            \"job_id\": jid,\n         \
+          \   \"company\": company,\n            \"title\": title,\n            \"\
+          url\": url,\n            \"score\": score\n        })\n\n        card_md\
+          \ = f\"### [{score:g}/10] {status_label}: {title} @ {company}\\n\"\n   \
+          \     card_md += f\"- **Platform**: {source}\\n\"\n        card_md += f\"\
+          - **Location**: {location}\\n\"\n        card_md += f\"- **URL**: {url}\\\
+          n\"\n        card_md += f\"- **Match Reason**: {reason}\\n\"\n        if\
+          \ cover_note:\n            card_md += f\"\\n**Tailored Application Note**:\\\
+          n> {cover_note}\\n\"\n        md_cards.append(card_md)\n\n        if not\
+          \ top_job_id and score >= 7.0:\n            top_job_id = jid\n         \
+          \   top_job_url = url\n            top_cover_note = cover_note\n\n    if\
+          \ md_cards:\n        header = f\"# \U0001F99E JobHunt Applied Roles Digest\
+          \ ({len(md_cards)} Matched Roles for Fresher / 0-1 YOE)\\n\\n\"\n      \
+          \  markdown_digest = header + \"\\n---\\n\".join(md_cards)\n    else:\n\
+          \        markdown_digest = (\n            \"# \U0001F99E JobHunt Digest:\
+          \ No High-Scoring Matches Today\\n\\n\"\n            f\"Screened {len(jobs)}\
+          \ candidate postings across ATS, LinkedIn, and X. \"\n            f\"All\
+          \ roles scored below the {MIN_SCORE_THRESHOLD}/10 threshold (e.g. senior\
+          \ requirements demanding 3+ years experience, \"\n            \"or non-engineering\
+          \ operations roles). No applications were submitted to protect your application\
+          \ history.\"\n        )\n\n    apply_payload = {\n        \"job_id\": top_job_id\
+          \ or (applied_roles[0][\"job_id\"] if applied_roles else \"job:none\"),\n\
+          \        \"url\": top_job_url or (applied_roles[0][\"url\"] if applied_roles\
+          \ else \"https://jobs.example.com\"),\n        \"cover_letter\": top_cover_note\
+          \ or \"I am excited to apply for this entry-level / SDE 1 engineering role.\"\
+          ,\n        \"dry_run\": is_dry_run\n    }\n\n    return {\n        \"digest_markdown\"\
+          : markdown_digest,\n        \"top_count\": len(applied_roles),\n       \
+          \ \"applied_roles_json\": json.dumps(applied_roles),\n        \"apply_payload_json\"\
+          : json.dumps(apply_payload)\n    }\n"
+        code_language: python3
+        desc: Formats multi-source digest and prepares application payload
+        outputs:
+          apply_payload_json:
+            type: string
+          digest_markdown:
+            type: string
+          top_count:
+            type: number
+        selected: false
+        title: Digest & Apply Prep
+        type: code
+        variables:
+        - value_selector:
+          - screen_llm
+          - text
+          variable: screen_raw
+        - value_selector:
+          - draft_llm
+          - text
+          variable: draft_raw
+        - value_selector:
+          - prefilter_code
+          - candidate_jobs
+          variable: candidate_jobs_json
+        - value_selector:
+          - start_node
+          - run_mode
+          variable: run_mode
+      height: 120
+      id: format_digest
+      position:
+        x: 2780
+        y: 280
+      positionAbsolute:
+        x: 2780
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: '{{#format_digest.apply_payload_json#}}'
+          type: raw-text
+        desc: Submits or validates job application with dry-run protection via Bridge
+          API
+        headers: 'Content-Type: application/json'
+        method: post
+        params: ''
+        selected: false
+        timeout:
+          connect: 10
+          max_retries: 0
+          read: 30
+          write: 10
+        title: Submit / Apply Action
+        type: http-request
+        url: '{{#env.BRIDGE_API_URL#}}/apply'
+      height: 106
+      id: apply_action
+      position:
+        x: 3380
+        y: 280
+      positionAbsolute:
+        x: 3380
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - prefilter_code
+          - passed_count
+          variable: matches_count
+        - value_selector:
+          - apply_action
+          - body
+          variable: apply_status
+        - value_selector:
+          - send_email
+          - body
+          variable: email_status
+        selected: false
+        title: End
+        type: end
+      height: 88
+      id: end_node
+      position:
+        x: 3680
+        y: 280
+      positionAbsolute:
+        x: 3680
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - id: send_email
+      type: custom
+      title: Send to Gmail
+      position:
+        x: 3080
+        y: 280
+      positionAbsolute:
+        x: 3080
+        y: 280
+      sourcePosition: right
+      targetPosition: left
+      height: 106
+      width: 244
+      data:
+        title: Send to Gmail
+        type: http-request
+        desc: Emails the formatted digest to kartikdewnani56@gmail.com via Gmail SMTP
+          bridge
+        method: post
+        url: '{{#env.BRIDGE_API_URL#}}/notify/email'
+        headers: 'Content-Type: application/json'
+        params: ''
+        body:
+          type: json
+          data: '{"subject": "\ud83e\udd9e JobHunt Daily Digest: Filtered Opportunities",
+            "content": "{{#format_digest.digest_markdown#}}"}'
+        authorization:
+          type: no-auth
+          config: null
+        timeout:
+          connect: 10
+          read: 30
+          write: 10
+          max_retries: 0
+        selected: false
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1

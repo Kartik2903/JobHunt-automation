@@ -1,0 +1,214 @@
+app:
+  description: Autonomous job hunting agent. Features deterministic Python prefiltering, strict LLM screening, and tailored digest drafting.
+  icon: 🦞
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: JobHunt AI Workflow Minimal
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables:
+    - description: Candidate profile JSON
+      id: candidate_profile
+      name: CANDIDATE_PROFILE
+      value: '{"name":"Kartik Dewnani","current_title":"Full-stack Engineer Intern","years_experience":0.5,"core_skills":["TypeScript","JavaScript","Node.js","Python","PostgreSQL","React","Next.js","Docker","Go","FastAPI","React Native","MySQL","Redis","RAG Pipelines","LLM Integration"],"domains":["full-stack development","backend engineering","mobile app development","AI / LLM integration","distributed systems"],"education":"MCA, CHRIST University (2025-2027)","target_titles":["Full-Stack Engineer","Backend Engineer","Software Development Engineer (SDE I)","Software Engineer Intern"],"seniority":"intern"}'
+      value_type: string
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+        id: edge_start_to_prefilter
+        source: start_node
+        sourceHandle: source
+        sourceType: start
+        target: prefilter_code
+        targetHandle: target
+        targetType: code
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+        id: edge_prefilter_to_screen
+        source: prefilter_code
+        sourceHandle: source
+        sourceType: code
+        target: screen_llm
+        targetHandle: target
+        targetType: llm
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+        id: edge_screen_to_end
+        source: screen_llm
+        sourceHandle: source
+        sourceType: llm
+        target: end_node
+        targetHandle: target
+        targetType: end
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: ''
+          selected: false
+          title: Start
+          type: start
+          variables:
+            - label: Input Raw Postings
+              max_length: 100000
+              required: false
+              type: paragraph
+              variable: raw_postings
+        height: 88
+        id: start_node
+        position:
+          x: 80
+          y: 280
+        positionAbsolute:
+          x: 80
+          y: 280
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      - data:
+          code: |
+            import re
+            import json
+
+            def main(raw_postings: str) -> dict:
+                inc_pat = re.compile(r"(?i)\b(sde|software (development )?engineer|full[- ]?stack|backend|engineer intern)\b")
+                exc_pat = re.compile(r"(?i)\b(staff|principal|director|engineering manager|lead|vp)\b")
+                
+                jobs = []
+                try:
+                    jobs = json.loads(raw_postings) if raw_postings else []
+                except Exception:
+                    pass
+
+                if not jobs:
+                    jobs = [
+                        {"job_id": "demo:1", "company": "Stripe", "title": "Software Development Engineer - Backend", "location": "Bangalore", "url": "https://stripe.com"},
+                        {"job_id": "demo:2", "company": "Ramp", "title": "Full-Stack Engineer Intern", "location": "Remote", "url": "https://ramp.com"}
+                    ]
+
+                passed = [j for j in jobs if inc_pat.search(j.get("title", "")) and not (exc_pat and exc_pat.search(j.get("title", "")))]
+
+                return {
+                    "candidate_jobs": json.dumps(passed),
+                    "passed_count": len(passed)
+                }
+          code_language: python3
+          desc: ''
+          outputs:
+            candidate_jobs:
+              type: string
+            passed_count:
+              type: number
+          selected: false
+          title: Deterministic Prefilter
+          type: code
+          variables:
+            - value_selector:
+                - start_node
+                - raw_postings
+              variable: raw_postings
+        height: 120
+        id: prefilter_code
+        position:
+          x: 380
+          y: 280
+        positionAbsolute:
+          x: 380
+          y: 280
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: ''
+          model:
+            completion_params:
+              temperature: 0.2
+            mode: chat
+            name: gpt-4o-mini
+            provider: openai
+          prompt_template:
+            - id: prompt_screen_sys
+              role: system
+              text: |
+                You screen job postings for one candidate. You are strict.
+                Score 0-10 on genuine fit:
+                  9-10  strong match
+                  7-8   good match, worth applying
+                  5-6   plausible but real gaps
+                  0-4   wrong seniority, wrong stack
+                Return a JSON array of evaluated jobs with score and reason.
+            - id: prompt_screen_user
+              role: user
+              text: |
+                CANDIDATE:
+                {{#env.CANDIDATE_PROFILE#}}
+
+                JOBS:
+                {{#prefilter_code.candidate_jobs#}}
+          selected: false
+          title: Strict LLM Screening
+          type: llm
+          vision:
+            enabled: false
+        height: 98
+        id: screen_llm
+        position:
+          x: 680
+          y: 280
+        positionAbsolute:
+          x: 680
+          y: 280
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+
+      - data:
+          desc: ''
+          outputs:
+            - value_selector:
+                - screen_llm
+                - text
+              variable: result
+          selected: false
+          title: End
+          type: end
+        height: 88
+        id: end_node
+        position:
+          x: 980
+          y: 280
+        positionAbsolute:
+          x: 980
+          y: 280
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1

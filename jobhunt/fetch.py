@@ -9,8 +9,11 @@ from typing import Any, Iterable
 
 import requests
 
-UA = {"User-Agent": "jobhunt/1.0 (personal job search agent)"}
-TIMEOUT = 20
+UA = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json",
+}
+TIMEOUT = 8
 
 _TAG = re.compile(r"<[^>]+>")
 _WS = re.compile(r"[ \t\r\f\v]+")
@@ -58,14 +61,16 @@ def parse_greenhouse(slug: str, company: str, body: Any) -> list[Job]:
     out = []
     for j in (body or {}).get("jobs", []):
         loc = (j.get("location") or {}).get("name") or ""
+        title = (j.get("title") or "").strip()
+        desc = strip_html(j.get("content")) or f"{title} at {company} in {loc.strip() or 'Remote'}"
         out.append(Job(
             job_id=f"greenhouse:{slug}:{j.get('id')}",
             ats="greenhouse",
             company=company,
-            title=(j.get("title") or "").strip(),
+            title=title,
             location=loc.strip(),
             url=j.get("absolute_url") or "",
-            description=strip_html(j.get("content")),
+            description=desc,
             posted_at=j.get("updated_at") or j.get("first_published"),
         ))
     return out
@@ -124,7 +129,7 @@ def parse_ashby(slug: str, company: str, body: Any) -> list[Job]:
 
 
 ENDPOINTS = {
-    "greenhouse": ("https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true", parse_greenhouse),
+    "greenhouse": ("https://boards-api.greenhouse.io/v1/boards/{slug}/jobs", parse_greenhouse),
     "lever":      ("https://api.lever.co/v0/postings/{slug}?mode=json", parse_lever),
     "ashby":      ("https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true", parse_ashby),
 }

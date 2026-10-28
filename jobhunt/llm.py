@@ -105,7 +105,7 @@ def build_profile(resume_bytes: bytes | None = None, resume_text: str | None = N
         except LLMError as e:
             raise LLMError(
                 f"{e}\nTip: export your resume to .txt and re-run, or set "
-                f"DRAFT_PROVIDER=anthropic|gemini for PDF support."
+                f"PROFILE_PROVIDER to a provider with PDF/image support."
             ) from e
     else:
         raw = provider.complete(

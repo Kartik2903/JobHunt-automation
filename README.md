@@ -24,11 +24,18 @@ read the digest, edit the cover note, and press submit yourself.
 
 ```bash
 git clone <your-repo> && cd jobhunt
-python -m venv .venv && .venv/Scripts/activate      # Windows
-# python -m venv .venv && source .venv/bin/activate # macOS/Linux
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-
 python -m jobhunt run --mock --scorer keyword
+```
+
+On Windows PowerShell, use these commands instead:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
 
 `--mock` runs bundled fixtures through the **real parsers** — no network.
@@ -139,17 +146,43 @@ DRAFT_MODEL=claude-sonnet-5
 
 | Provider | Value | Key | PDF resumes | Notes |
 |---|---|---|---|---|
-| Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | yes | default; uses the official SDK |
+| Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | yes | uses the official SDK |
 | Google Gemini | `gemini` | `GEMINI_API_KEY` | yes | generous free tier |
 | Groq | `groq` | `GROQ_API_KEY` | no | very fast, free tier |
-| OpenAI-compatible | `openai-compatible` | `GROQ_API_KEY` + `LLM_BASE_URL` | no | Together, OpenRouter, vLLM |
+| Mistral AI | `mistral` | `MISTRAL_API_KEY` | no | `mistral-small-latest` / `mistral-large-latest` |
+| Cerebras | `cerebras` | `CEREBRAS_API_KEY` | no | `qwen-3.8-27b` |
+| SambaNova | `sambanova` | `SAMBANOVA_API_KEY` | no | `Meta-Llama-3.3-70B-Instruct` |
+| OpenAI-compatible | `openai-compatible` | `OPENAI_API_KEY` + `LLM_BASE_URL` | no | Together, OpenRouter, vLLM |
 | Ollama | `ollama` | none | no | fully local, `OLLAMA_HOST` |
+
+Gemini remains the default. The app automatically tries providers in this order:
+Gemini, Mistral, Cerebras, then SambaNova. After an API error or invalid JSON,
+it moves to the next provider and keeps using that provider for the rest of the
+process. Providers with blank API keys are skipped. Change the order with
+`LLM_FALLBACK_PROVIDERS`.
+
+Add `MISTRAL_API_KEY`, `CEREBRAS_API_KEY`, and `SAMBANOVA_API_KEY` to `.env` to
+enable the fallbacks. Built-in model defaults are used for each provider; set
+provider-specific overrides such as `MISTRAL_SCREEN_MODEL` or
+`SAMBANOVA_DRAFT_MODEL` only when needed.
+
+The fallbacks also apply to profile extraction from text resumes. For PDF
+profile extraction, Gemini must be available because the other configured
+providers do not accept PDFs in this app. Export the PDF to `.txt` if you need
+profile extraction to fail over.
+
+API references: [Mistral chat completions](https://docs.mistral.ai/api/endpoint/chat),
+[Cerebras chat completions](https://inference-docs.cerebras.ai/api-reference/chat-completions),
+[SambaNova quickstart](https://docs.sambanova.ai/docs/en/get-started/quickstart).
 
 Everything except Anthropic goes over plain `requests`, so you can delete the
 `anthropic` line from `requirements.txt` and still run the whole thing.
 
 Adding a provider is one class in [`jobhunt/providers.py`](jobhunt/providers.py)
 with a `complete()` method, plus an entry in the `PROVIDERS` dict.
+
+PDF resume extraction uses Gemini's native PDF input. Set `PROFILE_MODEL` to a
+Gemini model that supports document input, or provide a `.txt`/`.md` resume.
 
 ---
 

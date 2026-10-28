@@ -25,7 +25,6 @@
 companies:
   - {ats: greenhouse, slug: stripe,      name: Stripe}
   - {ats: greenhouse, slug: databricks,  name: Databricks}
-  - {ats: greenhouse, slug: cloudflare,  name: Cloudflare}
   - {ats: greenhouse, slug: figma,       name: Figma}
   - {ats: greenhouse, slug: dropbox,     name: Dropbox}
   - {ats: greenhouse, slug: coinbase,    name: Coinbase}
@@ -36,3 +35,31 @@ companies:
   - {ats: ashby,      slug: ramp,        name: Ramp}
   - {ats: ashby,      slug: linear,      name: Linear}
   - {ats: ashby,      slug: vanta,       name: Vanta}
+  - {ats: ashby, slug: aiprise, name: AiPrise}
+  - {ats: ashby, slug: collinear-ai, name: Collinear AI}
+  - {ats: ashby, slug: build-ai, name: Build AI}
+  - {ats: ashby, slug: genera, name: Genera}
+  - {ats: ashby, slug: avoca, name: Avoca}
+  - {ats: ashby, slug: spector-ai, name: Spector.ai}
+  - {ats: lever, slug: levelai, name: Level AI}
+  - {ats: lever, slug: weekdayworks, name: Weekday}
+  - {ats: lever, slug: omnidian, name: Omnidian}
+  - {ats: lever, slug: zimperium, name: Zimperium}
+  - {ats: greenhouse, slug: razorpaysoftwareprivatelimited, name: Razorpay}
+  - {ats: greenhouse, slug: postman, name: Postman}
+  - {ats: greenhouse, slug: cloudflare, name: Cloudflare}
+  - {ats: greenhouse, slug: abnormalsecurity, name: Abnormal Security}
+
+  - {ats: lever, slug: spotify, name: Spotify}
+  - {ats: ashby, slug: ramp, name: Ramp}
+  - {ats: ashby, slug: supabase, name: Supabase}
+  - {ats: ashby, slug: notion, name: Notion}
+  - {ats: ashby, slug: replit, name: Replit}
+  - {ats: ashby, slug: linear, name: Linear}
+  - {ats: ashby, slug: docker, name: Docker}
+  - {ats: ashby, slug: posthog, name: PostHog}
+  - {ats: greenhouse, slug: discord, name: Discord}
+  - {ats: ashby, slug: cursor, name: Cursor}
+  - {ats: ashby, slug: elevenlabs, name: ElevenLabs}
+  - {ats: lever, slug: palantir, name: Palantir}
+

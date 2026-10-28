@@ -1,0 +1,17 @@
+[Unit]
+Description=JobHunt FastAPI Bridge Server for Dify.ai
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/JobHunt
+ExecStart=/home/ubuntu/JobHunt/.venv/bin/uvicorn bridge_server:app --host 0.0.0.0 --port 8000 --workers 2
+Restart=always
+RestartSec=5
+EnvironmentFile=/home/ubuntu/JobHunt/.env
+StandardOutput=append:/home/ubuntu/JobHunt/out/bridge.log
+StandardError=append:/home/ubuntu/JobHunt/out/bridge.err
+
+[Install]
+WantedBy=multi-user.target

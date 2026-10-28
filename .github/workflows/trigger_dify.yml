@@ -1,0 +1,67 @@
+name: Trigger Dify JobHunt Workflow
+
+on:
+  schedule:
+    # 03:30 UTC = 09:00 AM IST (Indian Standard Time) every morning
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      run_mode:
+        description: 'Run mode (dry_run or live)'
+        required: true
+        default: 'dry_run'
+        type: choice
+        options:
+          - dry_run
+          - live
+
+jobs:
+  run-jobhunt:
+    name: Run JobHunt on Dify Cloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dify Workflow via API
+        env:
+          DIFY_API_KEY: ${{ secrets.DIFY_API_KEY }}
+          RUN_MODE: ${{ github.event.inputs.run_mode || 'dry_run' }}
+        run: |
+          if [ -z "$DIFY_API_KEY" ]; then
+            echo "::error::Secret DIFY_API_KEY is not set in GitHub Repository Secrets!"
+            echo "Please go to Settings -> Secrets and variables -> Actions -> New repository secret and add DIFY_API_KEY."
+            exit 1
+          fi
+
+          AUTH_HEADER="$DIFY_API_KEY"
+          if [[ ! "$AUTH_HEADER" =~ ^Bearer ]]; then
+            AUTH_HEADER="Bearer $AUTH_HEADER"
+          fi
+
+          echo "🚀 Triggering Dify JobHunt Workflow at $(date)..."
+          echo "Mode: $RUN_MODE"
+
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST https://api.dify.ai/v1/workflows/run \
+            -H "Authorization: $AUTH_HEADER" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"inputs\": {
+                \"target_location\": \"bangalore, hyderabad, pune, remote\",
+                \"target_keywords\": \"software engineer, sde 1, backend, full stack, intern\",
+                \"run_mode\": \"$RUN_MODE\"
+              },
+              \"response_mode\": \"blocking\",
+              \"user\": \"github-actions-cron\"
+            }")
+
+          HTTP_BODY=$(echo "$RESPONSE" | sed -e '$d')
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1 | cut -d':' -f2)
+
+          echo "HTTP Status Code: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Workflow triggered and finished successfully!"
+            echo "Check your Gmail for the matched Fresher / 0-1 YOE digest."
+          else
+            echo "::error::Dify API returned HTTP $HTTP_STATUS"
+            echo "Response: $HTTP_BODY"
+            exit 1
+          fi

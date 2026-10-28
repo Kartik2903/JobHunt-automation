@@ -1,0 +1,282 @@
+openapi: 3.0.0
+info:
+  title: JobHunt Cloud Bridge API
+  description: Bridge API for Dify.ai to search LinkedIn, X, and submit applications
+    via reverse-engineered internal endpoints.
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      tags:
+      - Status
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Health Check Health Get
+  /jobs/linkedin:
+    get:
+      tags:
+      - Jobs
+      summary: Get Linkedin Jobs
+      description: Fetch LinkedIn jobs via reverse-engineered Voyager API / guest
+        feed.
+      operationId: get_linkedin_jobs_jobs_linkedin_get
+      parameters:
+      - name: keywords
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Search keywords
+          default: Full Stack Engineer
+          title: Keywords
+        description: Search keywords
+      - name: location
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Target city or country
+          default: Bangalore
+          title: Location
+        description: Target city or country
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: Max jobs to return
+          default: 20
+          title: Limit
+        description: Max jobs to return
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobResponse'
+                title: Response Get Linkedin Jobs Jobs Linkedin Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /jobs/x:
+    get:
+      tags:
+      - Jobs
+      summary: Get X Jobs
+      description: Search tech hiring announcements and founder posts on X.
+      operationId: get_x_jobs_jobs_x_get
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          description: X hiring query
+          default: (hiring OR "we are hiring") (sde OR "full stack" OR backend) bangalore
+          title: Query
+        description: X hiring query
+      - name: count
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: Max tweets to inspect
+          default: 20
+          title: Count
+        description: Max tweets to inspect
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobResponse'
+                title: Response Get X Jobs Jobs X Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /apply:
+    post:
+      tags:
+      - Apply
+      summary: Apply To Job
+      description: Submit or prepare job application.
+      operationId: apply_to_job_apply_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplyResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ApplyRequest:
+      properties:
+        job_id:
+          type: string
+          title: Job Id
+          description: Unique identifier for the job (e.g. greenhouse:slug:123)
+        url:
+          type: string
+          title: Url
+          description: Application or job posting URL
+        cover_letter:
+          type: string
+          title: Cover Letter
+          description: Tailored cover note drafted by LLM
+          default: ''
+        dry_run:
+          type: boolean
+          title: Dry Run
+          description: When true, validates form data without final dispatch
+          default: true
+      type: object
+      required:
+      - job_id
+      - url
+      title: ApplyRequest
+    ApplyResponse:
+      properties:
+        success:
+          type: boolean
+          title: Success
+        dry_run:
+          type: boolean
+          title: Dry Run
+        target:
+          type: string
+          nullable: true
+        endpoint:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
+        fields:
+          type: object
+          nullable: true
+        error:
+          type: string
+          nullable: true
+      type: object
+      required:
+      - success
+      - dry_run
+      title: ApplyResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    JobResponse:
+      properties:
+        job_id:
+          type: string
+          title: Job Id
+          description: Unique job ID e.g. linkedin:123 or x:456
+        ats:
+          type: string
+          title: Ats
+          description: Source platform name
+        company:
+          type: string
+          title: Company
+          description: Company name or posting author
+        title:
+          type: string
+          title: Title
+          description: Job role title
+        location:
+          type: string
+          title: Location
+          description: Job location
+        url:
+          type: string
+          title: Url
+          description: Direct posting link
+        description:
+          type: string
+          title: Description
+          description: Job description or tweet content
+        posted_at:
+          type: string
+          nullable: true
+      type: object
+      required:
+      - job_id
+      - ats
+      - company
+      - title
+      - location
+      - url
+      - description
+      title: JobResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+servers:
+- url: http://localhost:8000
+  description: Bridge Server

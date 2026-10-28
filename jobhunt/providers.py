@@ -13,6 +13,7 @@ Nothing here parses JSON or knows what a Job is. That lives in llm.py.
 from __future__ import annotations
 
 import base64
+import json
 import os
 from typing import Any
 
@@ -69,6 +70,69 @@ class Provider:
         if not value:
             raise LLMError(f"{key} is not set (see .env.example)")
         return value
+
+
+class FallbackProvider(Provider):
+    """Try configured providers in order until one returns usable output."""
+
+    def __init__(self, candidates: list[tuple[Provider, str]]):
+        if not candidates:
+            raise ValueError("FallbackProvider needs at least one candidate")
+        self.candidates = candidates
+        self.name = candidates[0][0].name
+        self._active_index = 0
+
+    @staticmethod
+    def _validate_json(raw: str) -> None:
+        """Reject non-JSON replies here so a later provider can be attempted."""
+        cleaned = (raw or "").strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[-1]
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3].strip()
+        try:
+            json.loads(cleaned)
+            return
+        except (TypeError, ValueError):
+            pass
+        # Accommodate a short preamble or trailing note around the JSON value.
+        for opener, closer in (("[", "]"), ("{", "}")):
+            start, end = cleaned.find(opener), cleaned.rfind(closer)
+            if start >= 0 and end > start:
+                try:
+                    json.loads(cleaned[start:end + 1])
+                    return
+                except (TypeError, ValueError):
+                    continue
+        raise LLMError("provider returned invalid JSON")
+
+    def _try(self, operation: str, *args, validate_json: bool = False,
+             **kwargs) -> str:
+        failures: list[str] = []
+        for index in range(self._active_index, len(self.candidates)):
+            provider, model = self.candidates[index]
+            try:
+                raw = getattr(provider, operation)(model, *args, **kwargs)
+                if validate_json:
+                    self._validate_json(raw)
+                if index:
+                    print(f"  ! {failures[0]} — switched to {provider.name}/{model}")
+                return raw
+            except Exception as e:
+                failures.append(f"{provider.name}/{model} failed ({type(e).__name__}: {e})")
+                if index + 1 < len(self.candidates):
+                    self._active_index = index + 1
+        raise LLMError("all configured models failed: " + "; ".join(failures))
+
+    def complete(self, model: str, system: str, user: str, max_tokens: int,
+                 json_mode: bool = False) -> str:
+        return self._try("complete", system, user, max_tokens,
+                         validate_json=json_mode, json_mode=json_mode)
+
+    def complete_document(self, model: str, prompt: str, pdf: bytes,
+                          max_tokens: int) -> str:
+        return self._try("complete_document", prompt, pdf, max_tokens,
+                         validate_json=True)
 
 
 class AnthropicProvider(Provider):
@@ -183,12 +247,16 @@ class OpenAICompatProvider(Provider):
     """Anything speaking /chat/completions - Groq, Together, OpenRouter, vLLM."""
 
     name = "openai-compatible"
-    required_env = "GROQ_API_KEY"
+    required_env = "OPENAI_API_KEY"
     default_base = "https://api.groq.com/openai/v1"
-    key_env = "GROQ_API_KEY"
+    key_env = "OPENAI_API_KEY"
 
     def complete(self, model: str, system: str, user: str, max_tokens: int,
                  json_mode: bool = False) -> str:
+        return self._chat_completion(model, system, user, max_tokens, json_mode)
+
+    def _chat_completion(self, model: str, system: str, user: str,
+                         max_tokens: int, json_mode: bool = False) -> str:
         base = os.getenv("LLM_BASE_URL", self.default_base).rstrip("/")
         messages = ([{"role": "system", "content": system}] if system else []) + \
                    [{"role": "user", "content": user}]
@@ -209,9 +277,32 @@ class OpenAICompatProvider(Provider):
         except (KeyError, IndexError, ValueError) as e:
             raise LLMError(f"{self.name} malformed reply: {r.text[:300]}") from e
 
-
 class GroqProvider(OpenAICompatProvider):
     name = "groq"
+    required_env = "GROQ_API_KEY"
+    key_env = "GROQ_API_KEY"
+    default_base = "https://api.groq.com/openai/v1"
+
+
+class MistralProvider(OpenAICompatProvider):
+    name = "mistral"
+    required_env = "MISTRAL_API_KEY"
+    key_env = "MISTRAL_API_KEY"
+    default_base = "https://api.mistral.ai/v1"
+
+
+class CerebrasProvider(OpenAICompatProvider):
+    name = "cerebras"
+    required_env = "CEREBRAS_API_KEY"
+    key_env = "CEREBRAS_API_KEY"
+    default_base = "https://api.cerebras.ai/v1"
+
+
+class SambaNovaProvider(OpenAICompatProvider):
+    name = "sambanova"
+    required_env = "SAMBANOVA_API_KEY"
+    key_env = "SAMBANOVA_API_KEY"
+    default_base = "https://api.sambanova.ai/v1"
 
 
 class OllamaProvider(Provider):
@@ -249,6 +340,9 @@ PROVIDERS = {
     "anthropic": AnthropicProvider,
     "gemini": GeminiProvider,
     "groq": GroqProvider,
+    "mistral": MistralProvider,
+    "cerebras": CerebrasProvider,
+    "sambanova": SambaNovaProvider,
     "openai-compatible": OpenAICompatProvider,
     "ollama": OllamaProvider,
 }
@@ -256,11 +350,22 @@ PROVIDERS = {
 # What each provider gets if you do not name a model, so `--scorer llm` works
 # after setting nothing but a key.
 DEFAULT_MODELS = {
-    "anthropic": {"screen": "claude-haiku-4-5-20251001", "draft": "claude-sonnet-5"},
-    "gemini": {"screen": "gemini-2.0-flash", "draft": "gemini-2.0-flash"},
-    "groq": {"screen": "llama-3.3-70b-versatile", "draft": "llama-3.3-70b-versatile"},
-    "openai-compatible": {"screen": "gpt-4o-mini", "draft": "gpt-4o"},
-    "ollama": {"screen": "llama3.1", "draft": "llama3.1"},
+    "anthropic": {"screen": "claude-haiku-4-5-20251001", "draft": "claude-sonnet-5",
+                  "profile": "claude-sonnet-5"},
+    "gemini": {"screen": "gemini-3.6-flash", "draft": "gemini-3.6-flash",
+               "profile": "gemini-3.6-flash"},
+    "groq": {"screen": "llama-3.3-70b-versatile", "draft": "llama-3.3-70b-versatile",
+             "profile": "llama-3.3-70b-versatile"},
+    "mistral": {"screen": "mistral-small-latest", "draft": "mistral-large-latest",
+                "profile": "mistral-small-latest"},
+    "cerebras": {"screen": "qwen-3.8-27b", "draft": "qwen-3.8-27b",
+                 "profile": "qwen-3.8-27b"},
+    "sambanova": {"screen": "Meta-Llama-3.3-70B-Instruct",
+                  "draft": "Meta-Llama-3.3-70B-Instruct",
+                  "profile": "Meta-Llama-3.3-70B-Instruct"},
+    "openai-compatible": {"screen": "gpt-4o-mini", "draft": "gpt-4o",
+                          "profile": "gpt-4o"},
+    "ollama": {"screen": "llama3.1", "draft": "llama3.1", "profile": "llama3.1"},
 }
 
 
@@ -274,22 +379,41 @@ def get_provider(name: str) -> Provider:
 
 
 def resolve(stage: str, check: bool = True) -> tuple[Provider, str]:
-    """Which provider + model handles this stage ("screen" or "draft")?
+    """Resolve the primary provider and its configured ordered fallbacks."""
+    stage_key = stage.upper()
+    primary_name = (os.getenv(f"{stage_key}_PROVIDER")
+                    or os.getenv("LLM_PROVIDER")
+                    or "anthropic").strip().lower()
+    fallback_names = [name.strip().lower() for name in os.getenv(
+        "LLM_FALLBACK_PROVIDERS", ""
+    ).split(",") if name.strip()]
+    names = list(dict.fromkeys([primary_name, *fallback_names]))
 
-    Precedence: stage-specific env var -> global env var -> built-in default.
-    Raises LLMError if the provider's credentials are missing, so the caller
-    can bail before spending anything.
-    """
-    name = (os.getenv(f"{stage.upper()}_PROVIDER")
-            or os.getenv("LLM_PROVIDER")
-            or "anthropic").strip().lower()
-    # Resolve the provider first: a typo'd name should say "unknown provider",
-    # not send you hunting for a model id it was never going to use.
-    provider = get_provider(name)
-    model = (os.getenv(f"{stage.upper()}_MODEL") or "").strip() \
-        or DEFAULT_MODELS.get(name, {}).get(stage)
-    if not model:
-        raise LLMError(f"set {stage.upper()}_MODEL for provider {name!r}")
-    if check:
-        provider.preflight()
-    return provider, model
+    candidates: list[tuple[Provider, str]] = []
+    missing_keys: list[str] = []
+    for index, name in enumerate(names):
+        provider = get_provider(name)
+        specific_model_key = f"{name.upper()}_{stage_key}_MODEL"
+        if index == 0:
+            model = (os.getenv(f"{stage_key}_MODEL") or "").strip()
+        else:
+            model = (os.getenv(specific_model_key) or "").strip()
+        model = model or DEFAULT_MODELS.get(name, {}).get(stage)
+        if not model:
+            raise LLMError(f"set {specific_model_key} for provider {name!r}")
+        try:
+            if check:
+                provider.preflight()
+        except LLMError as e:
+            if not fallback_names:
+                raise
+            missing_keys.append(str(e))
+            continue
+        candidates.append((provider, model))
+
+    if not candidates:
+        detail = "; ".join(missing_keys) or "no providers are configured"
+        raise LLMError(f"no configured provider has an API key: {detail}")
+    if len(candidates) == 1:
+        return candidates[0]
+    return FallbackProvider(candidates), candidates[0][1]
