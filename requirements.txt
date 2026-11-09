@@ -14,3 +14,7 @@ python-dotenv>=1.0.0
 
 # Tests
 pytest>=8.0
+
+# Google Sheets Sync
+gspread>=6.1.0
+google-auth>=2.29.0

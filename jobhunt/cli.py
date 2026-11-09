@@ -144,6 +144,7 @@ def cmd_run(args) -> int:
                     jobs.extend(x_jobs)
         except Exception as e:
             print(f"  ! reverse collectors note: {e}")
+    all_raw_scanned = list(jobs)
     scanned = len(jobs)
     if not scanned:
         print("no postings fetched — check the slugs in companies.yaml")
@@ -232,6 +233,23 @@ def cmd_run(args) -> int:
     store.record(jobs, emailed=sent)
     csv_path = store.export_csv(cfg.get("tracker_csv", "out/tracker.csv"))
 
+    # ---- Optional: Sync to Google Sheets
+    try:
+        from .gsheets import GoogleSheetsSync
+        gs_sync = GoogleSheetsSync()
+        if gs_sync.is_configured():
+            print("\n[Google Sheets] syncing run records...")
+            sync_res = gs_sync.sync_run(
+                all_scanned_jobs=all_raw_scanned,
+                filtered_jobs=jobs,
+                shortlist=shortlist,
+            )
+            print(f"  synced: {sync_res['all_added']} scanned rows, "
+                  f"{sync_res['filtered_added']} filtered rows, "
+                  f"{sync_res['metrics_added']} daily metric entries")
+    except Exception as e:
+        print(f"  ! Google Sheets sync note: {e}")
+
     print(f"\nfunnel: {scanned} scanned -> {passed_filters} passed filters "
           f"-> {candidates} new -> {len(shortlist)} in digest")
     print(f"subject: {subject}")
@@ -277,6 +295,21 @@ def cmd_hidden_market(args) -> int:
     return 0
 
 
+def cmd_sync_sheets(args) -> int:
+    from .gsheets import GoogleSheetsSync
+    sync = GoogleSheetsSync()
+    if not sync.is_configured():
+        print("Google Sheets sync is not configured. Set GOOGLE_SHEET_ID and GOOGLE_APPLICATION_CREDENTIALS / GOOGLE_SERVICE_ACCOUNT_JSON.")
+        return 1
+    print(f"Connecting to Google Sheets ID: {sync.sheet_id} ...")
+    sheets = sync.ensure_worksheets()
+    print("Worksheets verified:")
+    for title in sheets:
+        print(f" - {title}")
+    print("Google Sheets setup and connection verified successfully!")
+    return 0
+
+
 def main(argv=None) -> int:
     _load_env()
     p = argparse.ArgumentParser(
@@ -315,6 +348,9 @@ def main(argv=None) -> int:
     sh.add_argument("--limit", type=int, default=10, help="Max results per search query")
     sh.add_argument("--out", help="Save markdown table to file")
     sh.set_defaults(func=cmd_hidden_market)
+
+    sgs = sub.add_parser("sync-sheets", help="verify connection and setup Google Sheets worksheets")
+    sgs.set_defaults(func=cmd_sync_sheets)
 
     args = p.parse_args(argv)
     return args.func(args)

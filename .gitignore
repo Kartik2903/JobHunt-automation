@@ -1,5 +1,8 @@
 # secrets
 .env
+*service_account*.json
+*credentials*.json
+make-automation*.json
 
 # your actual resume and the profile derived from it
 resume.*
