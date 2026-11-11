@@ -88,6 +88,24 @@ def cmd_profile(args) -> int:
 
 
 # ---------------------------------------------------------------------- run --
+def _sync_sheets_safe(all_raw_scanned, filtered_jobs, shortlist):
+    try:
+        from .gsheets import GoogleSheetsSync
+        gs_sync = GoogleSheetsSync()
+        if gs_sync.is_configured():
+            print("\n[Google Sheets] syncing run records...")
+            sync_res = gs_sync.sync_run(
+                all_scanned_jobs=all_raw_scanned,
+                filtered_jobs=filtered_jobs,
+                shortlist=shortlist,
+            )
+            print(f"  synced: {sync_res['all_added']} scanned rows, "
+                  f"{sync_res['filtered_added']} filtered rows, "
+                  f"{sync_res['metrics_added']} daily metric entries")
+    except Exception as e:
+        print(f"  ! Google Sheets sync note: {e}")
+
+
 def cmd_run(args) -> int:
     cfg = _cfg(args.config)
     profile = _load_profile(cfg, allow_sample=args.mock)
@@ -162,6 +180,8 @@ def cmd_run(args) -> int:
         print(f"  --limit {args.limit} applied")
 
     if not jobs:
+        # Sync raw scanned jobs and daily metrics even if no new unseen jobs
+        _sync_sheets_safe(all_raw_scanned, [], [])
         subject, doc = digest_mod.build([], scanned, 0, store.stats())
         path = digest_mod.write(doc, cfg.get("digest_file", "out/digest.html"))
         print(f"\nnothing new today. preview: {path}")
@@ -234,21 +254,7 @@ def cmd_run(args) -> int:
     csv_path = store.export_csv(cfg.get("tracker_csv", "out/tracker.csv"))
 
     # ---- Optional: Sync to Google Sheets
-    try:
-        from .gsheets import GoogleSheetsSync
-        gs_sync = GoogleSheetsSync()
-        if gs_sync.is_configured():
-            print("\n[Google Sheets] syncing run records...")
-            sync_res = gs_sync.sync_run(
-                all_scanned_jobs=all_raw_scanned,
-                filtered_jobs=jobs,
-                shortlist=shortlist,
-            )
-            print(f"  synced: {sync_res['all_added']} scanned rows, "
-                  f"{sync_res['filtered_added']} filtered rows, "
-                  f"{sync_res['metrics_added']} daily metric entries")
-    except Exception as e:
-        print(f"  ! Google Sheets sync note: {e}")
+    _sync_sheets_safe(all_raw_scanned, jobs, shortlist)
 
     print(f"\nfunnel: {scanned} scanned -> {passed_filters} passed filters "
           f"-> {candidates} new -> {len(shortlist)} in digest")
